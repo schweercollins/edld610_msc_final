@@ -2,9 +2,250 @@
 title: "EDLD610 Final Data Viz"
 author: "Maria Schweer-Collins"
 date: "February 26, 2019"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+#library("tidyverse")
+library("rio")
+library("dplyr")
+library("here")
+library("ggplot2")
+library("purrr") #for bootstrapping
+library("colorblindr")
+library("forcats")
+#library("synthpop") #used to create simulated data
 ```
+
+###In this project, I model within-task longitudinal physiological data from children ages 3-7 who are part of a clinical trial. All data is simulated and not real. My first two visualizations are primarily for academic audiences, though with different purposes. My final visualization is for a community audience of early childhood clinicians.  
+```{r loadData}
+#load data using here and rio packages
+here() #check directory
+d2 <- import(here("data", "synData.csv")) #import simulated data
+
+```
+
+###Summary of use of Synthpop to generate my simulated data
+####Do not run
+```{r synthpop, eval = FALSE, echo = TRUE}
+dsub <- d[, c(1, 2:21, 23, 27, 28)] #select data from original datafile "d"
+syn1 <- syn(dsub) #create synthetic dataset based on original data
+compare(syn1, dsub) #compare distributions from real and synthetic data
+write.syn(syn1, filename = "synthData", filetype = "csv") #write and export synthetic data to csv 
+
+```
+
+
+###Visualization 1: Academic Audience
+####Visualizing Quadratic Trajectories of Child RSA across a task with four conditions from a significant multilevel analysis
+
+```{r final}
+p1 <- ggplot(data = d2, aes(x = Time, y = RSA)) +
+    geom_line(aes(group = id), color = "gray70") +
+    geom_smooth(method = "lm", 
+                formula = y ~ x + I(x^2), 
+                size = 1, se = FALSE, 
+                color = "#20A387FF") + 
+    facet_wrap(~W1TCAGEY, nrow = 1) +
+    labs(title ="Quadratic Trajectories of RSA by Child Age",
+         x = "Condition",
+         caption = "WJ-AP = Woodcock Johnson Applied Problems; WJ-PV = Picture Vocabulary; 
+                    RSA = Respiratory Sinus Arrhythmia") +
+    scale_x_continuous(name = "Condition",
+                       limits = c(0, 3),
+                       labels = c("Resting", "WJ-AP", "WJ-PV", "Recovery")) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p1
+
+#Looking for feedback on any changes that would reduce cognitive load required from x-axis labels
+
+
+```
+
+###Visualization 2: For Teaching Purposes with Student Audience in a Multilevel Modeling Course
+####Visualizing uncertainty in growth curves as a way to demonstrate between-child variability and uncertainty in slope parameters
+```{r animation}
+#transform time to numeric 
+d2 <- d2 %>%
+  mutate(Time = as.numeric(Time))
+
+#first iteration
+d2 %>%
+  ggplot(aes(Time, RSA)) +
+  geom_point() +
+  geom_smooth() +
+  scale_y_continuous(limits =c(0,10 ), breaks= seq(0, 10, by = 1)) +
+  ggtitle( "Changes in Child RSA by Task Condition")
+```
+
+```{r animation2}
+#second iteration
+#added jitter to points 
+#first iteration
+d2 %>%
+  ggplot(aes(Time, RSA)) +
+  geom_point(position = "jitter") +
+  geom_smooth() +
+  scale_y_continuous(limits =c(0,10 ), breaks= seq(0, 10, by = 1)) +
+  ggtitle( "Changes in Child RSA by Task Condition")
+
+#if reviewers have any suggestions about reducing the amount of jitter, it would be appreciated!
+```
+
+```{r animation3}
+#third iteration
+#add tranparency to show overlapping points and removed jittering
+d2 %>%
+  ggplot(aes(Time, RSA)) +
+  geom_point(alpha = .3) + 
+  geom_smooth() +
+  scale_y_continuous(limits =c(0,10 ), breaks= seq(0, 10, by = 1)) +
+  ggtitle( "Changes in Child RSA by Task Condition")
+
+```
+
+```{r animation4}
+#first use boostrapping to model variability 
+row_samps <- rerun(100,
+      sample(seq_len(nrow(d2)), 
+             nrow(d2), 
+             replace = TRUE))
+
+
+#extract samples 
+d_samps <- map_df(row_samps, ~d2[., ], .id = "sample")
+
+#plotting both bootstrapped data
+boots <- ggplot(d2, aes(Time, RSA)) +
+  geom_point() +
+  stat_smooth(aes(group = sample),
+              data = d_samps,
+              geom = "line",
+              color = "#4375D3",
+              fullrange = TRUE,
+              size = 0.1)
+boots
+
+
+#verify bootstrapped sample and raw data match 
+both <- ggplot(d2, aes(Time, RSA)) +
+  geom_point() +
+  geom_smooth(color = "magenta") +
+  stat_smooth(aes(group = sample),
+              data = d_samps,
+              geom = "line",
+              color = "#4375D3",
+              fullrange = TRUE,
+              size = 0.1, 
+              alpha = .1) +
+  labs(title = "Changes in Child RSA by Task Condition",
+       x = "Condition")
+both
+```
+
+###Final animated plot
+
+####I set this to eval = FALSE as I am not able to successfully get it to render.
+```{r animate4, eval = FALSE}
+
+#install.packages("gganimate") install gganimate if needed
+#install.packages("gifski") install gifski package to render animation
+
+
+library(gganimate)
+library(gifski)
+ggplot(d2, aes(Time, RSA)) +
+  geom_point(alpha = .1) +
+  stat_smooth(data = filter(d_samps, sample <= 20), # Only animate first 20
+              geom = "line",
+              color = "#4375D3",
+              fullrange = TRUE) +
+  transition_states(sample,
+                    transition_length = 0.5,
+                    state_length = 0.5) +
+  ease_aes('linear') +
+  labs(title = "Changes in Child RSA by Task Condition",
+       x = "Condition")
+
+
+#anim_save(here::here("edled610_msc_final", "data", "RSA_hop.gif")) #trying to save animation
+#![](final/RSA_hop.gif)
+  
+#Reviewers: I am struggling to get my visualization to save as a .gif to animate it. I also need to consider replicability, for example, where do I set the animation to save so anyone could access it?
+```
+
+###Third Visualization for Community Audience
+
+####Visualizing levels of adversity, as measured by ACE exposure, by child age and gender for hypothetical audience of clinicians who would like to better characterize the population they support. 
+
+```{r third, fig.height = 8, fig.width = 5}
+#turn gender into a factor 
+d2 <- d2 %>%
+  mutate(TCgender = as.factor(TCgender)) 
+
+#creating categorical variable based on Adverse Childhood Life Experiences. I am taking a continuous measure that ranges 0 - 10 and grouping it into "low", "medium", and "high."
+
+d2$category <- cut(d2$PEXCTOT1, 
+                   breaks=c(-Inf, 1, 4, Inf), 
+                   labels=c("Low","Middle","High"))
+
+# removing NAs from ACE exposure variable 
+d2 <- d2 %>%
+  filter(category != "na")
+
+
+#third visualization
+viz3 <- ggplot(d2, aes(category)) + 
+  geom_bar(aes(fill = TCgender), position = "dodge") +
+  facet_wrap(~W1TCAGEY, nrow = 5) +
+  coord_flip() +
+  scale_fill_OkabeIto() +
+  theme_minimal() +
+  labs(title = "ACE Exposure in Children by Age and Gender",
+       x = "Level of Adverse Childhood Experiences (ACEs)",
+       y = "Number of Children")
+  
+viz3  
+  
+
+```
+
+```{r final3, fig.height = 8, fig.width = 5}
+#rename Gender factor levels 
+library(plyr)
+d2 <- d2 %>%
+  mutate(TCgender = as.factor(TCgender)) 
+
+
+#putting some transparency in bars with alpha; 
+viz3 <- ggplot(d2, aes(category)) + 
+  geom_bar(aes(fill = TCgender), position = "dodge", alpha = 0.7) +
+  facet_wrap(~W1TCAGEY, nrow = 5) +
+  coord_flip() +
+  scale_fill_OkabeIto() +
+  theme_minimal() +
+  labs(title = "ACE Exposure in Children by Age and Gender",
+       x = "Level of Adverse Childhood Experiences (ACEs)",
+       y = "Number of Children",
+       fill = "Gender") # 1 = boy, 2 = girl
+  
+viz3  
+
+#need to add fct_reorder
+#Consider annotating Gender
+#Or, change values of Gender facotr
+#d2<- d2 %>%
+#  revalue(TCgender, c("1"="boy", "2"="girl"))
+#I can't figure out how to get the low category to only reflect one gender when there is a NA value (e.g., for 7-year-olds there are only girls who are in the low ACE category)
+
+```
+  
+
+
+
+
+
+
