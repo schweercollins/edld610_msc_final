@@ -44,10 +44,11 @@ write.syn(syn1, filename = "synthData", filetype = "csv") #write and export synt
 
 ```{r final}
 p1 <- ggplot(data = d2, aes(x = Time, y = RSA)) +
-    geom_line(aes(group = id), color = "gray70") +
+    geom_line(aes(group = id), color = "gray70", alpha = .5) + #ST added transparency to background lines
     geom_smooth(method = "lm", 
                 formula = y ~ x + I(x^2), 
-                size = 1, se = FALSE, 
+                size = 1, 
+                se = FALSE, 
                 color = "#20A387FF") + 
     facet_wrap(~W1TCAGEY, nrow = 1) +
     labs(title ="Quadratic Trajectories of RSA by Child Age",
@@ -57,10 +58,13 @@ p1 <- ggplot(data = d2, aes(x = Time, y = RSA)) +
     scale_x_continuous(name = "Condition",
                        limits = c(0, 3),
                        labels = c("Resting", "WJ-AP", "WJ-PV", "Recovery")) + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme_minimal() + #ST added to get rid of gray background
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          panel.grid.minor.x = element_blank()) #ST added to get rid of x axis gridlines that don't match a condition
 p1
 
 #Looking for feedback on any changes that would reduce cognitive load required from x-axis labels
+#ST I would consider changing the labels to time (T1, T2 etc) since it is trajectories, and then in the legend have the tasks associated with the times(T1: Resting...). Another idea is to put them all in 1 column and change the aspect ratio
 
 
 ```
@@ -85,11 +89,16 @@ d2 %>%
 #second iteration
 #added jitter to points 
 #first iteration
+
+#ST added jitter object to use to decrease overlap of jitter
+jitter <- position_jitter(width = 0.3, height = .1)
+
 d2 %>%
   ggplot(aes(Time, RSA)) +
-  geom_point(position = "jitter") +
+  geom_point(position = jitter, alpha = .6) + #ST added transparency to background points and referenced jitter object
   geom_smooth() +
-  scale_y_continuous(limits =c(0,10 ), breaks= seq(0, 10, by = 1)) +
+  scale_y_continuous(limits =c(0,10 ), 
+                     breaks= seq(0, 10, by = 1)) + #ST I have been trying to figure out how to do this - thank you!
   ggtitle( "Changes in Child RSA by Task Condition")
 
 #if reviewers have any suggestions about reducing the amount of jitter, it would be appreciated!
@@ -100,9 +109,10 @@ d2 %>%
 #add tranparency to show overlapping points and removed jittering
 d2 %>%
   ggplot(aes(Time, RSA)) +
-  geom_point(alpha = .3) + 
+  geom_jitter(width = .05, alpha = .5) + #ST changed point to narrow jitter to better see overlap
   geom_smooth() +
-  scale_y_continuous(limits =c(0,10 ), breaks= seq(0, 10, by = 1)) +
+  scale_y_continuous(limits =c(0,10 ), 
+                     breaks= seq(0, 10, by = 1)) +
   ggtitle( "Changes in Child RSA by Task Condition")
 
 ```
@@ -132,28 +142,31 @@ boots
 
 #verify bootstrapped sample and raw data match 
 both <- ggplot(d2, aes(Time, RSA)) +
-  geom_point() +
-  geom_smooth(color = "magenta") +
+  geom_jitter(width = .05, alpha = .5) + #ST changed point to narrow jitter to better see overlap
   stat_smooth(aes(group = sample),
               data = d_samps,
               geom = "line",
               color = "#4375D3",
               fullrange = TRUE,
               size = 0.1, 
-              alpha = .1) +
+              alpha = .3) + #ST increased alpha
+  geom_smooth(color = "magenta") + #ST moved this smooth to the layer after the bootstrapping to better see after increasing alpha
   labs(title = "Changes in Child RSA by Task Condition",
        x = "Condition")
 both
+
+#ST the transparency on the final stat smooth is so low that it looks almost like an se ribbon - I would consider changing the aspect ratio or increasing alpha. 
 ```
 
 ###Final animated plot
 
 ####I set this to eval = FALSE as I am not able to successfully get it to render.
-```{r animate4, eval = FALSE}
+```{r animate4}
 
 #install.packages("gganimate") install gganimate if needed
 #install.packages("gifski") install gifski package to render animation
 
+#ST I removed the eval = FALSE and it rendered perfectly for me!
 
 library(gganimate)
 library(gifski)
@@ -169,12 +182,13 @@ ggplot(d2, aes(Time, RSA)) +
   ease_aes('linear') +
   labs(title = "Changes in Child RSA by Task Condition",
        x = "Condition")
-
+#ST I would consider adding the jitter here as well
 
 #anim_save(here::here("edled610_msc_final", "data", "RSA_hop.gif")) #trying to save animation
 #![](final/RSA_hop.gif)
   
 #Reviewers: I am struggling to get my visualization to save as a .gif to animate it. I also need to consider replicability, for example, where do I set the animation to save so anyone could access it?
+#ST I don't know anything about saving a gif, sorry. But it did render correctly for me. 
 ```
 
 ###Third Visualization for Community Audience
@@ -204,12 +218,13 @@ viz3 <- ggplot(d2, aes(category)) +
   coord_flip() +
   scale_fill_OkabeIto() +
   theme_minimal() +
-  labs(title = "ACE Exposure in Children by Age and Gender",
-       x = "Level of Adverse Childhood Experiences (ACEs)",
+  labs(title = "ACE Exposure in Children by Age and Gender", 
+       x = "Level of Adverse Childhood Experiences (ACEs)\n", #ST adding space between axis title and axis
        y = "Number of Children")
   
 viz3  
   
+#ST I would put a caption as to why there are no groups for low in 4-7 and consider putting labels on the ends of your bars for the values. 
 
 ```
 
@@ -235,11 +250,13 @@ viz3 <- ggplot(d2, aes(category)) +
 viz3  
 
 #need to add fct_reorder
-#Consider annotating Gender
+#Consider annotating Gender #ST I wouldnt do this unless you get rid of the facet somehow
 #Or, change values of Gender facotr
 #d2<- d2 %>%
 #  revalue(TCgender, c("1"="boy", "2"="girl"))
 #I can't figure out how to get the low category to only reflect one gender when there is a NA value (e.g., for 7-year-olds there are only girls who are in the low ACE category)
+  #ST I also tried a few things and couldnt get it to work.
+#ST GREAT JOB!
 
 ```
   
