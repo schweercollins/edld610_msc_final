@@ -7,9 +7,37 @@ output:
   pdf_document: default
 ---
 
+# Peer review from Teresa 
+
+Nice work, Maria! Although I am not in your field, I can totally understand what menssage each data visulization wants to convey. I place overall feedback at the begging. As your codes are really easy to follow along, I alos replicate your three plots with my design preference in new code chunks under **Teresa's attempt** titles. Hope these feedback helps!
+
+## Areas of strength
++ Your codes are neat and easy to follow along. 
++ It is reproducible. I successfully knited your file the first time I tried. 
++ The commentary helps me a lot, especially things I am not familiar with (ex. bootstrap).
++ I like your selection of color! 
++ The labels and titles are straightforward and clear. 
+
+
+## I learned from reviewing their script
++ I have been using `here::here` for a long while but do not know `here()` can return directory. 
++ I always wanted to make an uncertainty visualization of line plot. Your code difintely serves as my reference for the future.  
++ The animation plot actually works on my end when I run the code chuck! I move `library(gganimate)` to the very first chuck and add a line of code to save .gif in the data folder. Hope these code answers your quetion :)
+
+## Areas for improvement 
++ I played around **fig.height**, **fig.width** and **base_size** to get a better figure ratio. You might consider to try it out too!
++ I noticed there are couple NAs. I'd suggest run `skimr::skim()` at the beginning and filter those `NA` when necessary. For my replicated plots, I added `filter(!is.na(RSA))` before plotting to avoid warning messeange.
++ For consistency and efficiency, I use `factor(var, levels = (), labels = ())` and `mutate(case_when = var ~ label)` to create gender and category variable for plot 3. 
+
+All the other edits are minor and just my personal preference of styling, such as spaceing, bolding, jitter width...and so on. I also noticed the titles seem to become texts. I figured it was probably because of the lack of space between ### and title. 
+
+Overall, nice work! I wish I could learn how to simulate data from you as well!
+
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-#library("tidyverse")
+library("tidyverse")
 library("rio")
 library("dplyr")
 library("here")
@@ -17,19 +45,24 @@ library("ggplot2")
 library("purrr") #for bootstrapping
 library("colorblindr")
 library("forcats")
+library(gganimate)
 #library("synthpop") #used to create simulated data
 ```
 
-###In this project, I model within-task longitudinal physiological data from children ages 3-7 who are part of a clinical trial. All data is simulated and not real. My first two visualizations are primarily for academic audiences, though with different purposes. My final visualization is for a community audience of early childhood clinicians.  
+### In this project, I model within-task longitudinal physiological data from children ages 3-7 who are part of a clinical trial. All data is simulated and not real. My first two visualizations are primarily for academic audiences, though with different purposes. My final visualization is for a community audience of early childhood clinicians.  
+
 ```{r loadData}
 #load data using here and rio packages
 here() #check directory
 d2 <- import(here("data", "synData.csv")) #import simulated data
 
+#skimr::skim(d2)
+#str(d2)
 ```
 
-###Summary of use of Synthpop to generate my simulated data
+### Summary of use of Synthpop to generate my simulated data
 ####Do not run
+
 ```{r synthpop, eval = FALSE, echo = TRUE}
 dsub <- d[, c(1, 2:21, 23, 27, 28)] #select data from original datafile "d"
 syn1 <- syn(dsub) #create synthetic dataset based on original data
@@ -39,8 +72,8 @@ write.syn(syn1, filename = "synthData", filetype = "csv") #write and export synt
 ```
 
 
-###Visualization 1: Academic Audience
-####Visualizing Quadratic Trajectories of Child RSA across a task with four conditions from a significant multilevel analysis
+### Visualization 1: Academic Audience
+#### Visualizing Quadratic Trajectories of Child RSA across a task with four conditions from a significant multilevel analysis
 
 ```{r final}
 p1 <- ggplot(data = d2, aes(x = Time, y = RSA)) +
@@ -65,8 +98,41 @@ p1
 
 ```
 
-###Visualization 2: For Teaching Purposes with Student Audience in a Multilevel Modeling Course
-####Visualizing uncertainty in growth curves as a way to demonstrate between-child variability and uncertainty in slope parameters
+### Teresa's attempt on plot 1
+```{r fig.width=20, fig.height=12}
+
+
+d2 %>% 
+  filter(!is.na(RSA)) %>%
+  mutate(Age = factor(W1TCAGEY, levels = c(3, 4, 5, 6, 7),
+                           labels = c("Age 3", "Age 4", "Age 5", "Age 6", "Age 7"))) %>% 
+  # make age variable as factor with according labels
+  ggplot(aes(x = Time, y = RSA)) +
+  geom_line(aes(group = id),
+            color = "gray70") +
+  geom_smooth(method = "lm",
+              formula = y ~ x + I(x^2),
+              size = 2,
+              se = FALSE,
+              color = "#20A387FF") +
+  facet_wrap(~Age,nrow = 1) +
+  theme_minimal(base_size = 30) +
+  scale_x_continuous(name = "Condition",
+                     labels = c("Resting", "WJ-AP", "WJ-PV", "Recovery")) +
+  labs(title ="Quadratic Trajectories of RSA by Child Age",
+         x = "Condition",
+         caption = "WJ-AP = Woodcock Johnson Applied Problems\n WJ-PV = Picture Vocabulary\n RSA = Respiratory Sinus Arrhythmia") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.spacing = unit(1, "lines"), # increasing space between facets
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold")) # bold the title
+```
+
+
+### Visualization 2: For Teaching Purposes with Student Audience in a Multilevel Modeling Course
+
+#### Visualizing uncertainty in growth curves as a way to demonstrate between-child variability and uncertainty in slope parameters
+
 ```{r animation}
 #transform time to numeric 
 d2 <- d2 %>%
@@ -107,6 +173,8 @@ d2 %>%
 
 ```
 
+
+
 ```{r animation4}
 #first use boostrapping to model variability 
 row_samps <- rerun(100,
@@ -146,6 +214,36 @@ both <- ggplot(d2, aes(Time, RSA)) +
 both
 ```
 
+### Teresa's attempt on plot 2
+
+```{r fig.height=8, fig.width=10}
+d2 %>% 
+  filter(!is.na(RSA)) %>%
+  ggplot(aes(x = Time, y = RSA)) +
+  geom_jitter(alpha = 0.3,
+              size = 2,
+              width = 0.1) +  # change to small jitter width 
+  geom_smooth(color = "magenta") +
+  stat_smooth(aes(group = sample),
+              data = d_samps,
+              geom = "line",
+              color = "#4375D3",
+              fullrange = TRUE,
+              size = 0.1, 
+              alpha = .1) +
+  scale_y_continuous(limits =c(0,10 ), 
+                     breaks= seq(0, 10, by = 1)) +
+  scale_x_continuous(name = "Condition",
+                     labels = c("Resting", "WJ-AP", "WJ-PV", "Recovery")) +
+  labs(title =  "Changes in Child RSA by Task Condition") +
+  theme_minimal(base_size = 17) +
+  theme(panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold"))
+```
+
+
+
+
 ###Final animated plot
 
 ####I set this to eval = FALSE as I am not able to successfully get it to render.
@@ -177,9 +275,44 @@ ggplot(d2, aes(Time, RSA)) +
 #Reviewers: I am struggling to get my visualization to save as a .gif to animate it. I also need to consider replicability, for example, where do I set the animation to save so anyone could access it?
 ```
 
-###Third Visualization for Community Audience
+### Teresa's try on plot 2 (animation)
 
-####Visualizing levels of adversity, as measured by ACE exposure, by child age and gender for hypothetical audience of clinicians who would like to better characterize the population they support. 
+```{r fig.height=8, fig.width=10}
+
+ani_plot2 <- d2 %>% 
+  filter(!is.na(RSA)) %>% 
+  ggplot(aes(Time, RSA)) +
+  geom_jitter(alpha = 0.3,
+              size = 2,
+              width = 0.1) +  # change to small jitter width 
+  stat_smooth(data = filter(d_samps, sample <= 20),
+              geom = "line",
+              color = "#4375D3",
+              fullrange = TRUE,
+              size = 1, 
+              alpha = 0.5) +
+  scale_y_continuous(limits =c(0, 10), 
+                     breaks= seq(0, 10, by = 1)) +
+  scale_x_continuous(name = "Condition",
+                     labels = c("Resting", "WJ-AP", "WJ-PV", "Recovery")) +
+  labs(title =  "Changes in Child RSA by Task Condition") +
+  theme_minimal(base_size = 17) +
+  theme(panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold")) +
+  transition_states(sample,
+                    transition_length = 0.5,
+                    state_length = 0.5) +
+  ease_aes('linear')
+
+ani_plot2
+
+anim_save(filename = "data/ani_plot2.gif") # save .gif to data folder
+```
+
+
+### Third Visualization for Community Audience
+
+#### Visualizing levels of adversity, as measured by ACE exposure, by child age and gender for hypothetical audience of clinicians who would like to better characterize the population they support. 
 
 ```{r third, fig.height = 8, fig.width = 5}
 #turn gender into a factor 
@@ -215,7 +348,7 @@ viz3
 
 ```{r final3, fig.height = 8, fig.width = 5}
 #rename Gender factor levels 
-library(plyr)
+#library(plyr)
 d2 <- d2 %>%
   mutate(TCgender = as.factor(TCgender)) 
 
@@ -243,9 +376,32 @@ viz3
 
 ```
   
+### Teresa's attempt on plot 3
 
-
-
-
-
+```{r fig.height=16, fig.width=10}
+d2 %>% 
+  mutate(Gender = factor(TCgender, levels = c(1, 2),
+                         labels = c("boy", "girl")),
+         # here I change gender to factor with according labels
+         Age = factor(W1TCAGEY, levels = c(3, 4, 5, 6, 7),
+                           labels = c("Age 3", "Age 4", "Age 5", "Age 6", "Age 7")),
+         Category = dplyr::case_when(
+           PEXCTOT1 >= 4 ~ "High",
+           PEXCTOT1 > 1 & PEXCTOT1 < 4 ~ "Middle",
+           PEXCTOT1 <= 1 ~ "Low",
+           TRUE ~ "NA"
+         )) %>% 
+  # I'm not sure about how to categorize 1 and 4, I assume they are "middle" and "low" respectively. Using case_when instead of cut can make coding more efficient.
+  filter(Category != "NA") %>% 
+    ggplot(aes(factor(Category, levels = c("Low", "Middle", "High")))) + 
+      geom_bar(aes(fill = Gender), position = "dodge", alpha = 0.7) +
+      facet_wrap(~Age, nrow = 5) +
+      coord_flip() +
+      scale_fill_OkabeIto() +
+      theme_minimal(base_size = 15) +
+      labs(title = "ACE Exposure in Children by Age and Gender",
+           x = "Level of Adverse Childhood Experiences (ACEs)",
+           y = "Number of Children",
+           fill = "Gender") 
+```
 
