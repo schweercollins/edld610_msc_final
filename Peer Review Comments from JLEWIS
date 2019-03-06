@@ -1,0 +1,29 @@
+Visualization 1:
+
+Something I learned from you: 
+ While I knew that you could graph quadratic relationships, I hadn’t done this yet so seeing how you added the formula to the geom_smooth was great for me to learn how to do this in the future.
+
+Strengths of this visual:
+-	It’s a very nice, clean design.  Not overly complicated. Good y-axis scale. Fairly easy to read and figure out what the data is showing.  Great at showing the data range for each age.
+
+Potential area for improvement:
+-	You made a note requesting feedback for reducing cognitive load for the x-axis, and I agree it is a little bit cluttered.  I wonder if instead of using the acronyms or task names is you used numbers (1, 2, 3, 4) and then annotated the numbers in the caption.  This isn’t really different than what you did but just another way to try it that might reduce some of the load.
+-	One other thing that might help me is if the facet labels had “years” attached to it.  So “3 years” instead of 3.  Your title says “by Child Age” but this would just make it a little clearer.
+
+Visualization 2:
+
+I don’t have much knowledge of multilevel modeling and growth curves so I had a hard time understanding this graph. Sorry!
+
+I haven’t worked on any animated visuals at this point so it was very nice for me to see how you set this up here. Thanks for the learning opportunity
+
+Points of Strength: I think adding the alpha to the geom_point added to the graph.
+
+Point of improvement:  I’m not super clear on your X-axis, you call it Time in some iterations but name it condition in your final version.  If it is time, it is not clear to me what units it is in, and if it is condition, having a condition “0” is confusing to me. 
+
+Visualization 3:
+
+Points of strength:  Great to use a colorblind safe palate! I like that you flipped the coordinates here, I think that is a better fit for the data.
+
+Points for Improvement: 
+I think if this is intended for a community audience it would be more compelling to have the Title listing the full ACE rather than the acronym.  I think this will draw people into the purpose of the graph more.
+I also think having “3 years” on the facet labels rather than just the number 3 would be helpful.
